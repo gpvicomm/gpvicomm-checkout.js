@@ -1,0 +1,50 @@
+{
+  "name": "payment-checkout",
+  "authors": [
+    "Developers <dev@gpvicomm.com>"
+  ],
+  "description": "Credit Card input form with validation and allows you to create a token with credit/debit card details in your web apps, by preventing sensitive card data from crossing your server (More information, read PCI compliance).",
+  "version": "2.2.3",
+  "main": "./payment_checkout_stable.min.js",
+  "payment_gateway": {
+    "pg__gateway_name__": "gpvicomm",
+    "pg__gateway_domain__": "gpvicomm.com",
+    "pg__primary_color__": "#003C71",
+    "pg__secondary_color__": "#ED1C24"
+  },
+  "homepage": "https://pvicomm.com",
+  "moduleType": [
+    "globals"
+  ],
+  "keywords": [
+    "gpvicomm",
+    "Credit Card Input",
+    "Credit Card Form",
+    "Credit Card Validation",
+    "Tokenize Card"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gpvicomm/gpvicomm-checkout.js"
+  },
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependences": {},
+  "devDependencies": {
+    "grunt": "^1.0.4",
+    "grunt-contrib-concat": "^0.5.1",
+    "grunt-contrib-connect": "^2.0.0",
+    "grunt-contrib-cssmin": "^3.0.0",
+    "grunt-contrib-jshint": "^2.0.0",
+    "grunt-contrib-less": "^2.0.0",
+    "grunt-contrib-nodeunit": "^2.0.0",
+    "grunt-contrib-uglify-es": "^3.3.0",
+    "grunt-contrib-watch": "^1.1.0"
+  }
+}
