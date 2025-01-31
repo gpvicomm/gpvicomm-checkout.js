@@ -55,7 +55,6 @@
     this.opts = extend({}, defaults, options);
     this.DOMAIN = "pg__gateway_domain__";
 
-    this.SERVER_LOCAL_URL = "http://localhost:8080";
     this.SERVER_DEV_URL = `https://ccapi-dev.${this.DOMAIN}`;
     this.SERVER_STG_URL = `https://ccapi-stg.${this.DOMAIN}`;
     this.SERVER_QA_URL = `https://ccapi-qa.${this.DOMAIN}`;
@@ -137,56 +136,11 @@
     this.modal.classList.add('payment-checkout-modal--visible');
     this.modalBoxContent.innerHTML = '<div class="payment_dialog_info"><i class="fa fa-times-circle"></i><span>' + self.opts.loadingLabel + '</span></div>';
 
-    let installments_type = -1;
-    if (parseInt(orderRequest['order_installments_type']) >= 0) {
-      installments_type = orderRequest['order_installments_type'];
-    }
-
-    let default_theme = {
-      primary_color: "pg__primary_color__",
-      secondary_color: "pg__secondary_color__",
-      logo: "https://cdn.pg__gateway_domain__/ccapi/image/logo.png",
-      background_image: null
-    };
-
     let params = {
-      session_id: _getSessionId(),
-      locale: self.opts.locale,
-      user: {
-        id: orderRequest['user_id'],
-        email: orderRequest['user_email'],
-        phone: orderRequest['user_phone']
-      },
-      order: {
-        amount: orderRequest['order_amount'],
-        description: orderRequest['order_description'],
-        vat: orderRequest['order_vat'],
-        dev_reference: orderRequest['order_reference'],
-        installments_type: installments_type,
-      },
-      conf: {
-        exclusive_types: orderRequest['conf_exclusive_types'],
-        invalid_card_type_message: orderRequest['conf_invalid_card_type_message'],
-        style_version: orderRequest["style_version"] || "2",
-        theme: orderRequest["theme"] || default_theme
-      }
+      reference: orderRequest['reference'],
     };
-    let taxable_amount = orderRequest['order_taxable_amount'];
-    if (taxable_amount !== undefined && taxable_amount !== null && taxable_amount >= 0) {
-      params['order']['taxable_amount'] = taxable_amount;
-    }
 
-    let tax_percentage = orderRequest['order_tax_percentage'];
-    if (tax_percentage !== undefined && tax_percentage !== null && tax_percentage >= 0) {
-      params['order']['tax_percentage'] = tax_percentage;
-    }
-
-    _initCheckout.call(this, params, function success(checkout_response) {
-      self.openModal(checkout_response['checkout_url']);
-    }, function error(error_response) {
-      self.modalBoxContent.innerHTML = '<div class="payment_dialog_error"><i class="fa fa-times-circle"></i><span>' + self.opts.errorLabel + error_response.error.type + '</span></div>';
-    });
-
+    self.openModal(_getServerURL.call(this) + "/v2/transaction/checkout?reference=" + params['reference']);
 
     if (transitionEvent) {
       this.modal.addEventListener(transitionEvent, function handler() {
@@ -373,8 +327,6 @@
         this.modal.classList.remove('payment-checkout-modal--overflow');
       }
 
-      // TODO: remove offset
-      //_offset.call(this);
       if (!this.isOverflow() && this.opts.stickyFooter) {
         this.setStickyFooter(false);
       } else if (this.isOverflow() && this.opts.stickyFooter) {
@@ -416,81 +368,26 @@
     return sha256.getHash("HEX");
   }
 
-  function _initCheckout(initCheckoutRequest, successCallback, erroCallback) {
-    let SERVER_URL = this.SERVER_STG_URL;
-    let TIME_STAMP_SERVER = this.PG_MICROS_STAGING;
-    let auth_timestamp = String(Math.floor(new Date().getTime() / 1000));
-
-    if (this.opts.env_mode === 'dev') {
-      SERVER_URL = this.SERVER_DEV_URL;
-      TIME_STAMP_SERVER = this.PG_MICROS_STAGING;
-    } else if (this.opts.env_mode === 'local') {
-      SERVER_URL = this.SERVER_LOCAL_URL;
-      TIME_STAMP_SERVER = this.PG_MICROS_STAGING;
-    } else if (this.opts.env_mode === 'stg') {
-      SERVER_URL = this.SERVER_STG_URL;
-      TIME_STAMP_SERVER = this.PG_MICROS_STAGING;
-    } else if (this.opts.env_mode === 'prod') {
-      SERVER_URL = this.SERVER_PROD_URL;
-      TIME_STAMP_SERVER = this.PG_MICROS_PRODUCTION;
-    } else if (this.opts.env_mode === 'prod-qa') {
-      SERVER_URL = this.SERVER_QA_URL;
-      TIME_STAMP_SERVER = this.PG_MICROS_PRODUCTION;
-    } else {
-      SERVER_URL = this.SERVER_STG_URL;
-      TIME_STAMP_SERVER = this.PG_MICROS_STAGING;
+  function _getServerURL() {
+    let url_by_env = {
+      dev: this.SERVER_DEV_URL,
+      stg: this.SERVER_STG_URL,
+      'prod-qa': this.SERVER_QA_URL,
+      prod: this.SERVER_PROD_URL,
     }
-
-    // Get UnixTime
-    try {
-      let xhr = new XMLHttpRequest();
-      xhr.open("GET", TIME_STAMP_SERVER, false);
-      xhr.send();
-      if (xhr.status >= 200 && xhr.status < 300) {
-        let response = JSON.parse(xhr.responseText);
-        if (response.unixtime) {
-          auth_timestamp = String(response.unixtime);
-        }
-      } else {
-        auth_timestamp = String(Math.floor(new Date().getTime() / 1000));
-      }
-    } catch (error) {
-      auth_timestamp = String(Math.floor(new Date().getTime() / 1000));
-    }
-    //
-
-    let xmlhttp = new XMLHttpRequest();
-    xmlhttp.open("POST", SERVER_URL + "/v2/transaction/init_checkout", true);
-    xmlhttp.setRequestHeader("Content-Type", 'application/json');
-    xmlhttp.setRequestHeader("Auth-Token", _getAuthToken(this.opts.client_app_code, this.opts.client_app_key, auth_timestamp));
-
-
-    xmlhttp.onreadystatechange = function () {
-      if (xmlhttp.readyState === XMLHttpRequest.DONE) {   // XMLHttpRequest.DONE == 4
-        try {
-          let objResponse = JSON.parse(xmlhttp.responseText);
-          if (xmlhttp.status === 200) {
-            successCallback(objResponse);
-          } else if (xmlhttp.status === 400) {
-            erroCallback(objResponse);
-          } else {
-            erroCallback(objResponse);
-          }
-        } catch (e) {
-          let server_error = {
-            "error": {
-              "type": "Server Error",
-              "help": "Please Try Again Later",
-              "description": "Something Went Wrong"
-            }
-          };
-          erroCallback(server_error);
-        }
-
-      }
-    };
-    xmlhttp.send(JSON.stringify(initCheckoutRequest));
+    return url_by_env[this.opts.env_mode] || this.SERVER_STG_URL;
   }
+
+  function _getTimeStampServerURL() {
+    let url_by_env = {
+      dev: this.PG_MICROS_STAGING,
+      stg: this.PG_MICROS_STAGING,
+      'prod-qa': this.PG_MICROS_PRODUCTION,
+      prod: this.PG_MICROS_PRODUCTION,
+    }
+    return url_by_env[this.opts.env_mode] || this.PG_MICROS_STAGING;
+  }
+
 
 
   function _recalculateFooterPosition() {

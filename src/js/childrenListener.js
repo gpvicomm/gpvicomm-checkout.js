@@ -1,8 +1,6 @@
 (function () {
   const domain = "pg__gateway_domain__";
   let listServers = [
-    "http://localhost:3000",
-    "http://localhost:8080",
     `https://ccapi-dev.${domain}`,
     `https://ccapi-stg.${domain}`,
     `https://ccapi-qa.${domain}`,

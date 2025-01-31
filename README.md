@@ -34,72 +34,68 @@ controlador en respuesta a cualquier evento. Si necesita abortar el proceso de p
 aplicación de una sola página, llame la función `close()` en el controlador.
 
 
-```html
-<script src="https://cdn.gpvicomm.com/ccapi/sdk/payment_checkout_stable.min.js" charset="UTF-8"></script>
+``` html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Example | Payment Checkout Js</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.gpvicomm.com/ccapi/sdk/payment_checkout_3.1.0.min.js" charset="UTF-8"></script>
+</head>
+<body>
+<button class="js-payment-checkout">Pay with Card</button>
+<div id="response"></div>
 
-<button class="js-payment-checkout">Compra</button>
-
-
-<script>    
+<script>
   let paymentCheckout = new PaymentCheckout.modal({
-      client_app_code: 'PAYMENT_CLIENT_APP_CODE', // Application Code de las credenciales CLIENT
-      client_app_key: 'PAYMENT_CLIENT_APP_KEY', // Application Key de las credenciales CLIENT
-      locale: 'es', // Idioma preferido del usuario (es, en, pt). El inglés se usará por defecto
-      env_mode: 'stg', // `prod`, `stg`, `local` para cambiar de ambiente. Por defecto es `stg`
-      onOpen: function() {
-          console.log('Modal abierto');
-      },
-      onClose: function() {
-          console.log('Modal cerrado');
-      },
-      onResponse: function(response) { // Funcionalidad a invocar cuando se completa el proceso de pago
-          
-          /*
-            En caso de error, esta será la respuesta.
-            response = {
-              "error": {
-                "type": "Server Error",
-                "help": "Try Again Later",
-                "description": "Sorry, there was a problem loading Checkout."
-              }
-            }
+    env_mode: 'stg', // `prod`, `stg`: to change environment. Default is `stg`
+    onOpen: function () {
+      console.log('modal open');
+    },
+    onClose: function () {
+      console.log('modal closed');
+    },
+    onResponse: function (response) { // The callback to invoke when the Checkout process is completed
 
-            Cual el usuario completa el flujo en el Checkout, esta será la respuesta
-            response = {  
-              "transaction":{  
-                  "status":"success", // Estado de la transacción
-                  "id":"PR-81011", // Id de la transacción de lado de la pasarela
-                  "status_detail":3 // Para más detalles de los detalles de estado: https://developers.gpvicomm.com/api/#detalle-de-los-estados
-              }
-            }
-          */
-          console.log('Respuesta de modal');
-          document.getElementById('response').innerHTML = JSON.stringify(response);            
-      }
+      /*
+        In Case of an error, this will be the response.
+        response = {
+          "error": {
+            "type": "Server Error",
+            "help": "Try Again Later",
+            "description": "Sorry, there was a problem loading Checkout."
+          }
+        }
+
+        When the User completes all the Flow in the Checkout, this will be the response.
+        response = {
+          "transaction":{
+              "status": "success", // success or failure
+              "id": "PR-10002", // transaction_id
+              "status_detail": 3 // for the status detail please refer to: https://developers.gpvicomm.com/api/#detalle-de-los-estados
+          }
+        }
+      */
+      console.log('modal response');
+      document.getElementById('response').innerHTML = JSON.stringify(response);
+    }
   });
 
   let btnOpenCheckout = document.querySelector('.js-payment-checkout');
-  btnOpenCheckout.addEventListener('click', function(){
-    // Open Checkout with further options:
+  btnOpenCheckout.addEventListener('click', function () {
     paymentCheckout.open({
-      user_id: '1234',
-      user_email: 'dev@gpvicomm.com', // Opcional        
-      user_phone: '7777777777', // Opcional
-      order_description: '1 Green Salad',
-      order_amount: 1500,
-      order_vat: 0,
-      order_reference: '#234323411',
-      //order_installments_type: 2, // Opcional: 0 para permitir cuotas, -1 en caso contrario.
-      //conf_exclusive_types: 'ak,ex', // Opcional: Tipos de tarjeta permitidos para esta operación. Opciones: https://developers.gpvicomm.com/api/#metodos-de-pago-tarjetas-marcas-de-tarjetas
-      //conf_invalid_card_type_message: 'Tarjeta invalida para esta operación' // Opcional: Define un mensaje personalizado para mostrar para los tipos de tarjeta no válidos.
+      reference: '8REV4qMyQP3w4xGmANA' // reference received for Payment Gateway
     });
   });
-  
-  // Cerrar el Checkout en la navegación de la página:
-  window.addEventListener('popstate', function() {
+
+  window.addEventListener('popstate', function () {
     paymentCheckout.close();
   });
 </script>
+</body>
+</html>
+
 
 ```
 
@@ -111,9 +107,6 @@ Cambia la apariencia y el comportamiento de Checkout con las siguientes opciones
 
 | Parámetro       | Requerido | Descripción                                                                                             |
 |-----------------|----------|----------------------------------------------------------------------------------------------------------|
-| client_app_code | sí       | Application Code de las credenciales CLIENT                                                              |
-| client_app_key  | sí       | Application KEY de las credenciales CLIENT                                                               |
-| env_mode        | sí       | `prod`, `stg`, `local` para cambiar de ambiente. Por defecto es `stg`                                    |
 | locale          | no       | Idioma preferido del usuario (es, en, pt). El inglés se usará por defecto                                |
 | onOpen          | no       | `function()` Callback a invocar cuando el Checkout es abierto                                            |
 | onClose         | no       | `function()` Callback a invocar cuando el Checkout es cerrado                                            |
@@ -145,20 +138,12 @@ En caso de error, esta será la respuesta.
 
 
 ### PaymentCheckout.open
-| Parámetro                      | Requerido | Descripción                                                                                                                                               |
-|--------------------------------|----|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| user_id                        | sí | Identificador del cliente Este es el identificador que usa dentro de su aplicación.                                                                              |
-| user_email                     | no | Si ya conoces la dirección de correo electrónico de tu usuario, puedes proporcionarla al Checkout para que se complete previamente.                              |
-| user_phone                     | no | Si ya conoces el teléfono de tu usuario, puedes proporcionarlo al Checkout para que se complete previamente.                                                     |
-| order_description              | sí | Una descripción del producto o servicio que se compra.                                                                                                           |
-| order_amount                   | sí | La cantidad que se muestra al usuario. Formato: decimal con dos dígitos de fracción.                                                                             |
-| order_vat                      | sí | Importe del impuesto sobre las ventas, incluido en el costo del producto. Formato: decimal con dos dígitos de fracción.                                          |
-| order_reference                | sí | Referencia de pedido de comerciante. Identificarás esta compra utilizando esta referencia.                                                                       |
-| order_installments_type        | no | 0 para permitir cuotas, -1 en caso contrario.
-|
-| conf_exclusive_types           | no | Tipos de tarjeta permitidos para esta operación. Opciones: https://developers.gpvicomm.com/api/#metodos-de-pago-tarjetas-marcas-de-tarjetas                  
-|
-| conf_invalid_card_type_message | no | Define un mensaje personalizado para mostrar para los tipos de tarjeta no válidos.                                                                               |
+| Parametro | Requerido | Descripcion                                                                                                            |
+|-----------|-----------|------------------------------------------------------------------------------------------------------------------------|
+| reference | sí        | Reference transaction. Se obtiene esta referencia al llamar al servicio init transaction.|
+
+### Generar Referencia
+Antes de invocar el checkout, se debe generar una referencia con los datos del pago, ver https://developers.gpvicomm.com/api/#metodos-de-pago-tarjetas-inicializar-una-referencia
 
 
 ## Requisitos HTTPS
